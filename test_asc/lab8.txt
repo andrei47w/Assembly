@@ -1,0 +1,85 @@
+bits 32 ; assembling for the 32 bits architecture
+
+; declare the EntryPoint (a label defining the very first instruction of the program)
+global start        
+
+; declare external functions needed by our program
+extern exit, fopen, fprintf, fclose, fread, printf
+import exit msvcrt.dll
+import fopen msvcrt.dll
+import fprintf msvcrt.dll
+import fclose msvcrt.dll
+import fread msvcrt.dll
+import printf msvcrt.dll
+
+; our data is declared here (the variables needed by our program)
+segment data use32 class=data
+    file_name db "E:\asm_tools\files\string.txt", 0
+    access_mode db "r", 0
+    file_descriptor dd -1
+    len equ 100
+    text times len db 0
+    
+    format db "There are %d consonants in the file.", 0
+    
+    number_of_consonants dd 0
+    text_len dd 0
+    vowel_list db 'a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U'
+
+; our code starts here
+segment code use32 class=code
+    start:
+        ;A text file is given. Read the content of the file, count the number of consonants and display the result on the screen. The name of text file is defined in the data segment. 
+    
+    push dword access_mode     
+    push dword file_name
+    call [fopen]
+    add esp, 4*2
+    mov [file_descriptor], eax              ;store the file descriptor returned by fopen
+
+    cmp eax, 0                   
+    je final                                ;check if file is open
+
+    push dword [file_descriptor]            ;read the text from file
+    push dword len
+    push dword 1
+    push dword text        
+    call [fread]
+    add esp, 4*4
+
+    mov [text_len], eax                     ;store text's length
+    
+    push dword [file_descriptor]            ;close the file
+    call [fclose]
+    add esp, 4
+    
+    mov ecx, [text_len]
+    mov esi, text                           ;prepare the text to be parsed
+    parse_text:
+        lodsb
+        
+        mov edi, 11
+        parse_vowel_list:                   ;check if the current char is a vowel and skips over incrementing [number_of_consonants]
+            cmp al, [vowel_list + edi - 2]  ;compares the current char to a vowel
+            je is_not_consonant             ;skips over incrementing [number_of_consonants]
+            dec edi
+            jnz parse_vowel_list   
+            
+        cmp al, 'A'                         ;check is the current char is a letter and skips over incrementing [number_of_consonants] 
+        jb is_not_consonant
+        cmp al, 'z'
+        ja is_not_consonant
+        inc dword[number_of_consonants]     ;increments the number of consonants
+        
+        is_not_consonant:
+    loop parse_text
+    
+    push dword [number_of_consonants]       ;print the number of consonants in the file
+    push dword format
+    call [printf]
+    add esp, 4*2
+    
+    final:
+        
+        push    dword 0      ; push the parameter for exit onto the stack
+        call    [exit]       ; call exit to terminate the program

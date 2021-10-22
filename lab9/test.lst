@@ -1,0 +1,60 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  extern exit, fopen, fprintf, fclose, scanf, printf
+     7                                  import exit msvcrt.dll  
+     8                                  import fopen msvcrt.dll  
+     9                                  import fprintf msvcrt.dll
+    10                                  import fclose msvcrt.dll
+    11                                  import scanf msvcrt.dll
+    12                                  import printf msvcrt.dll
+    13                                  
+    14                                  ; our data is declared here (the variables needed by our program)
+    15                                  segment data use32
+    16 00000000 476976652073747269-     	format1 db "Give string = ", 0
+    16 00000009 6E67203D2000       
+    17 0000000F 257800                      format2 db "%x", 0
+    18 00000012 257300                      format3 db "%s", 0
+    19                                      ;617269614D
+    20 00000015 00<rept>                    char_string times 100 db 0
+    21 00000079 00<rept>                    string times 100 db 0
+    22                                  
+    23                                  segment code use32 class=code
+    24                                  start:    
+    25                                  
+    26 00000000 68[00000000]                push dword format1
+    27 00000005 FF15[00000000]              call [printf]
+    28 0000000B 83C404                      add esp, 4*1
+    29                                      
+    30 0000000E 68[15000000]            	push dword char_string             
+    31 00000013 68[12000000]                push dword format3
+    32 00000018 FF15[00000000]              call [scanf]
+    33 0000001E 83C408                      add esp, 4*2 
+    34                                      
+    35 00000021 802D[15000000]30            sub byte [char_string], 48
+    36 00000028 A0[15000000]                mov al, [char_string]
+    37 0000002D A2[79000000]                mov [string], al
+    38                                      
+    39 00000032 802D[16000000]30            sub byte [char_string + 1], 48
+    40 00000039 A0[16000000]                mov al, [char_string + 1]
+    41 0000003E A2[7A000000]                mov [string+1], al
+    42                                      
+    43 00000043 B104                        mov cl, 4
+    44 00000045 D205[79000000]              rol byte[string], cl
+    45 0000004B D205[7A000000]              rol byte[string + 1], cl
+    46                                      
+    47 00000051 8A1D[7A000000]              mov bl, [string+1]
+    48 00000057 80E30F                      and bl, 1111b
+    49                                      
+    50 0000005A 001D[79000000]              add byte[string], bl
+    51                                      
+    52 00000060 68[15000000]                push dword char_string
+    53 00000065 68[12000000]                push dword format3
+    54 0000006A FF15[00000000]              call [printf]
+    55 00000070 83C408                      add esp, 4*2
+    56                                      
+    57                                  
+    58 00000073 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    59 00000075 FF15[00000000]                  call    [exit]       ; call exit to terminate the program
